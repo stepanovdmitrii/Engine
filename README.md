@@ -7,3 +7,5 @@
 *KeyMonitor* - named lock monitor
 
 *FixedSizeQueue* - thread-safe queue of fixed size
+
+*SimpleSpinLock* - spin lock with Interlocked.CompareExchange
