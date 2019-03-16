@@ -49,7 +49,7 @@ namespace Engine.Core.Concurrent
         private sealed class KeyLock
         {
             private int _refs = 0;
-            public object Token = new object();
+            public readonly object Token = new object();
 
             public void  AddReference()
             {

@@ -24,6 +24,12 @@ namespace Engine.Core
                 throw new ArgumentNullException(paramName);
         }
 
+        public static void IsEqual<T>(T value, T compareTo, string paramName) where T: IComparable<T>
+        {
+            if (value.CompareTo(compareTo) != 0)
+                throw new ArgumentException($"Value {value} is not equal to {compareTo}", paramName);
+        }
+
         public static void Assert(bool b)
         {
             if (!b)

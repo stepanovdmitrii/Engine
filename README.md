@@ -9,3 +9,5 @@
 *FixedSizeQueue* - thread-safe queue of fixed size
 
 *SimpleSpinLock* - spin lock with Interlocked.CompareExchange
+
+*Int32Decomposed/Int64Decomposed* - Int32/Int64 types with access to single bytes
