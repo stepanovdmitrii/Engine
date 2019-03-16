@@ -5,3 +5,4 @@
 ## Engine.Core
 
 *KeyMonitor* - named lock monitor
+*FixedSizeQueue* - thread-safe queue of fixed size
