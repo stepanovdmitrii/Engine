@@ -4,20 +4,20 @@ using System.Collections.Generic;
 
 namespace Engine.Core.Concurrent
 {
-    public sealed class KeyMonitor<T>
+    public sealed class KeyMonitor<TKey>
     {
         private readonly object _dictionaryLock = new object();
-        private readonly Dictionary<T, KeyLock> _locks;
+        private readonly Dictionary<TKey, KeyLock> _locks;
 
-        public KeyMonitor(IEqualityComparer<T> equalityComparer)
+        public KeyMonitor(IEqualityComparer<TKey> equalityComparer)
         {
             Verify.IsNotNull(equalityComparer, nameof(equalityComparer));
-            _locks = new Dictionary<T, KeyLock>(equalityComparer);
+            _locks = new Dictionary<TKey, KeyLock>(equalityComparer);
         }
 
-        public KeyMonitor(): this(EqualityComparer<T>.Default) { }
+        public KeyMonitor(): this(EqualityComparer<TKey>.Default) { }
 
-        public IDisposable Lock(T key)
+        public IDisposable Lock(TKey key)
         {
             KeyLock keyLock = null;
             lock (_dictionaryLock)
@@ -27,13 +27,13 @@ namespace Engine.Core.Concurrent
                     keyLock = new KeyLock();
                     _locks[key] = keyLock;
                 }
-                keyLock.AddReference();
+                keyLock.Increment();
             }
             Monitor.Enter(keyLock.Token);
             return new DisposableAction(() => Unlock(key));
         }
 
-        private void Unlock(T key)
+        private void Unlock(TKey key)
         {
             lock (_dictionaryLock)
             {
@@ -51,7 +51,7 @@ namespace Engine.Core.Concurrent
             private int _refs = 0;
             public readonly object Token = new object();
 
-            public void  AddReference()
+            public void Increment()
             {
                 ++_refs;
             }

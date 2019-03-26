@@ -35,5 +35,11 @@ namespace Engine.Core
             if (!b)
                 throw new InvalidOperationException();
         }
+
+        public static void IsNotDisposed(bool disposed, object @this)
+        {
+            if (disposed)
+                throw new ObjectDisposedException(@this.ToString());
+        }
     }
 }
