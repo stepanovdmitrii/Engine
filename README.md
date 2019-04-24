@@ -6,7 +6,9 @@
 
 *KeyMonitor* - named lock monitor
 
-*ReadWriteKeyMonitor* - named read/wriet lock monitor
+*ReadWriteKeyMonitor* - named read/write lock monitor
+
+*ReadWriteLock* - read/write lock
 
 *FixedSizeQueue* - thread-safe queue of fixed size
 
