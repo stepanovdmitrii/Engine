@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading;
 
 namespace Engine.Core.Concurrent
 {
-    public sealed class ReadWriteKeyMonitor<TKey> : IDisposable
+    public sealed class ReadWriteKeyMonitor<TKey>
     {
         private readonly LockSet _locks;
 
@@ -27,228 +26,96 @@ namespace Engine.Core.Concurrent
 
         private IDisposable GetLock(TKey key, bool exclusive)
         {
-            ILockContext context = null;
-            bool lockTaken = false;
-            try
+            LockContext context = _locks.Acquire(key);
+            if (exclusive)
             {
-                context = _locks.Acquire(key);
-                if (exclusive)
-                {
-                    context.EnterWriteLock();
-                }
-                else
-                {
-                    context.EnterReadLock();
-                }
-                lockTaken = true;
-                context = null;
+                context.EnterWriteLock();
             }
-            finally
+            else
             {
-                if(context != null)
-                {
-                    if (lockTaken)
-                    {
-                        _locks.ReleaseAndUnlock(key, exclusive);
-                    }
-                    else
-                    {
-                        _locks.Release(key);
-                    }
-                }
+                context.EnterReadLock();
             }
-            return new DisposableAction(() => _locks.ReleaseAndUnlock(key, exclusive));
+            return new DisposableAction(() => _locks.ReleaseAndUnlock(key, exclusive));           
         }
 
-        public void Dispose()
+        private sealed class LockContext
         {
-            if (_locks != null) _locks.Dispose();
+            private readonly ReadWriteLock _lock = new ReadWriteLock();
+            private uint _usages = 0;
+
+            public void IncrementUsages()
+            {
+                _usages++;
+            }
+
+            public uint DecrementUsages()
+            {
+                _usages--;
+                return _usages;
+            }
+
+            public void EnterReadLock()
+            {
+                _lock.EnterReadLock();
+            }
+
+            public void ExitReadLock()
+            {
+                _lock.ExitReadLock();
+            }
+
+            public void EnterWriteLock()
+            {
+                _lock.EnterWriteLock();
+            }
+
+            public void ExitWriteLock()
+            {
+                _lock.ExitWriteLock();
+            }
         }
 
-        private interface ILockContext
-        {
-            void EnterReadLock();
-            void EnterWriteLock();
-        }
-
-        private sealed class LockSet : IDisposable
+        private sealed class LockSet
         {
             private readonly object _lock = new object();
             private readonly Dictionary<TKey, LockContext> _locks;
-            private bool _disposed = false;
 
             public LockSet(IEqualityComparer<TKey> equalityComparer)
             {
                 _locks = new Dictionary<TKey, LockContext>(equalityComparer);
             }
 
-            public ILockContext Acquire(TKey key)
+            public LockContext Acquire(TKey key)
             {
-                Verify.IsNotDisposed(_disposed, this);
                 lock (_lock)
                 {
-                    LockContext context = null;
-                    try
+                    if (!_locks.TryGetValue(key, out LockContext context))
                     {
-                        if(!_locks.TryGetValue(key, out context))
-                        {
-                            LockContext contextToAdd = null;
-                            try
-                            {
-                                contextToAdd = new LockContext();
-                                _locks[key] = contextToAdd;
-                                context = contextToAdd;
-                                contextToAdd = null;
-                            }
-                            finally
-                            {
-                                if(contextToAdd != null)
-                                {
-                                    contextToAdd.Dispose();
-                                    _locks.Remove(key);
-                                }
-                            }
-                        }
-                        context.IncrementUsages();
-                        var temp = context;
-                        context = null;
-                        return temp;
+                        context = new LockContext();
+                        _locks[key] = context;
                     }
-                    finally
-                    {
-                        if(context != null)
-                        {
-                            context.Dispose();
-                            _locks.Remove(key);
-                        }
-                    }
+                    context.IncrementUsages();
+                    return context;
                 }
             }
 
             public void ReleaseAndUnlock(TKey key, bool exclusive)
             {
-                Verify.IsNotDisposed(_disposed, this);
-                LockContext context = null;
                 lock (_lock)
                 {
-                    try
+                    LockContext context = _locks[key];
+                    if (exclusive)
                     {
-                        context = _locks[key];
-                        if (exclusive)
-                        {
-                            context.ExitWriteLock();
-                        }
-                        else
-                        {
-                            context.ExitReadLock();
-                        }
-                        if(context.DecrementUsages() != 0)
-                        {
-                            context = null;
-                        }
+                        context.ExitWriteLock();
                     }
-                    finally
+                    else
                     {
-                        if(context != null)
-                        {
-                            context.Dispose();
-                            _locks.Remove(key);
-                        }
+                        context.ExitReadLock();
                     }
-                }
-            }
-
-            public void Release(TKey key)
-            {
-                Verify.IsNotDisposed(_disposed, this);
-                LockContext context = null;
-                lock (_lock)
-                {
-                    try
+                    if (context.DecrementUsages() == 0)
                     {
-                        context = _locks[key];
-                        if (context.DecrementUsages() != 0)
-                        {
-                            context = null;
-                        }
+                        _locks.Remove(key);
                     }
-                    finally
-                    {
-                        if (context != null)
-                        {
-                            context.Dispose();
-                            _locks.Remove(key);
-                        }
-                    }
-                }
-            }
-
-            public void Dispose()
-            {
-                if (_disposed)
-                    return;
-
-                foreach(var pair in _locks)
-                {
-                    pair.Value.Dispose();
-                }
-                _locks.Clear();
-                _disposed = true;
-            }
-
-            private sealed class LockContext : ILockContext, IDisposable
-            {
-                private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-                private uint _usages = 0;
-                private bool _disposed = false;
-
-                public void IncrementUsages()
-                {
-                    Verify.IsNotDisposed(_disposed, this);
-                    _usages++;
-                }
-
-                public uint DecrementUsages()
-                {
-                    Verify.IsNotDisposed(_disposed, this);
-                    _usages--;
-                    return _usages;
-                }
-
-                public void EnterReadLock()
-                {
-                    Verify.IsNotDisposed(_disposed, this);
-                    _lock.EnterReadLock();
-                }
-
-                public void ExitReadLock()
-                {
-                    Verify.IsNotDisposed(_disposed, this);
-                    _lock.ExitReadLock();
-                }
-
-                public void EnterWriteLock()
-                {
-                    Verify.IsNotDisposed(_disposed, this);
-                    _lock.EnterWriteLock();
-                }
-
-                public void ExitWriteLock()
-                {
-                    Verify.IsNotDisposed(_disposed, this);
-                    _lock.ExitWriteLock();
-                }
-
-                public void Dispose()
-                {
-                    if (_disposed)
-                        return;
-
-                    if (_lock != null)
-                    {
-                        _lock.Dispose();
-                    }
-                    _disposed = true;
                 }
             }
         }
