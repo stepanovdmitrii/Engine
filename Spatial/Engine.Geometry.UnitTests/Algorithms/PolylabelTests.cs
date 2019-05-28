@@ -19,8 +19,8 @@ namespace Engine.Geometry.UnitTests.Algorithms
             });
 
             Vertex result = Polylabel.ComputeLabelPosition(square);
-            Assert.AreEqual(50, result.X, 1E-6, "Polylabel for square failed: {0}", nameof(result.X));
-            Assert.AreEqual(50, result.Y, 1E-6, "Polylabel for square failed: {0}", nameof(result.Y)); 
+            Assert.That(result.X, Is.EqualTo(50).Within(1E-6), "Polylabel for square failed: {0}", nameof(result.X));
+            Assert.That(result.Y, Is.EqualTo(50).Within(1E-6), "Polylabel for square failed: {0}", nameof(result.Y));
         }
 
         [Test]
@@ -34,8 +34,8 @@ namespace Engine.Geometry.UnitTests.Algorithms
             });
 
             Vertex result = Polylabel.ComputeLabelPosition(rectangle);
-            Assert.AreEqual(50, result.X, 1E-6, "Polylabel for rectangle failed: {0}", nameof(result.X));
-            Assert.AreEqual(25, result.Y, 1E-6, "Polylabel for rectangle failed: {0}", nameof(result.Y));
+            Assert.That(result.X, Is.EqualTo(50).Within(1E-6), "Polylabel for rectangle failed: {0}", nameof(result.X));
+            Assert.That(result.Y, Is.EqualTo(25).Within(1E-6), "Polylabel for rectangle failed: {0}", nameof(result.Y));
         }
 
         [Test]
@@ -48,8 +48,8 @@ namespace Engine.Geometry.UnitTests.Algorithms
             });
 
             Vertex result = Polylabel.ComputeLabelPosition(triangle);
-            Assert.AreEqual(50, result.X, 1E-6, "Polylabel for triangle failed: {0}", nameof(result.X));
-            Assert.AreEqual(30.901700, result.Y, 1E-6, "Polylabel for triangle failed: {0}", nameof(result.Y));
+            Assert.That(result.X, Is.EqualTo(50).Within(1E-6), "Polylabel for triangle failed: {0}", nameof(result.X));
+            Assert.That(result.Y, Is.EqualTo(30.901700).Within(1E-6), "Polylabel for triangle failed: {0}", nameof(result.Y));
         }
 
         [Test]
@@ -58,9 +58,9 @@ namespace Engine.Geometry.UnitTests.Algorithms
             var empty = new Polygon(new List<Vertex>());
             var onePoint = new Polygon(new[] { new Vertex(0, 0) });
             var twoPoints = new Polygon(new[] { new Vertex(0, 0), new Vertex(1, 1) });
-            Assert.Throws<ArgumentOutOfRangeException>(() => Polylabel.ComputeLabelPosition(empty));
-            Assert.Throws<ArgumentOutOfRangeException>(() => Polylabel.ComputeLabelPosition(onePoint));
-            Assert.Throws<ArgumentOutOfRangeException>(() => Polylabel.ComputeLabelPosition(twoPoints));
+            Assert.That(() => Polylabel.ComputeLabelPosition(empty), Throws.TypeOf(typeof(ArgumentOutOfRangeException)));
+            Assert.That(() => Polylabel.ComputeLabelPosition(onePoint), Throws.TypeOf(typeof(ArgumentOutOfRangeException)));
+            Assert.That(() => Polylabel.ComputeLabelPosition(twoPoints), Throws.TypeOf(typeof(ArgumentOutOfRangeException)));
         }
     }
 }
