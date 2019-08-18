@@ -13,7 +13,7 @@ namespace Engine.Core
 
         public void Dispose()
         {
-            _action();
+            _action?.Invoke();
         }
     }
 }
