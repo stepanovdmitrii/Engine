@@ -15,3 +15,5 @@
 *SimpleSpinLock* - spin lock with Interlocked.CompareExchange
 
 *Int32Decomposed/Int64Decomposed* - Int32/Int64 types with access to single bytes
+
+*BinaryTree* - thread-safe binary tree
