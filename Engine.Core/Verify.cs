@@ -18,7 +18,7 @@ namespace Engine.Core
                 throw new ArgumentOutOfRangeException(paramName, $"Value {value} is out of range ({lowerBound}; {upperBound})");
         }
 
-        public static void IsNotNull<T>(T value, string paramName) where T: class
+        public static void IsNotNull<T>(T value, string paramName)
         {
             if (value == null)
                 throw new ArgumentNullException(paramName);

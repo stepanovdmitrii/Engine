@@ -2,22 +2,16 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <RootNamespace>Engine.Geometry</RootNamespace>
     <Platforms>x64</Platforms>
-    <AssemblyName>Engine.Geometry</AssemblyName>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutputPath>..\..\bin\Debug</OutputPath>
+    <OutputPath>..\bin\Debug\</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutputPath>..\..\bin\Release</OutputPath>
+    <OutputPath>..\bin\Release\</OutputPath>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\Shared\Engine.Core\Engine.Core.csproj" />
-  </ItemGroup>
 
 </Project>
