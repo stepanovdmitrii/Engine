@@ -1,11 +1,16 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Engine.Core.Collections
 {
-    public sealed class BinaryTree<TKey, TValue> where TKey : IComparable<TKey>
+    public sealed class BinaryTree<TKey, TValue>: IReadOnlyCollection<TValue> where TKey : IComparable<TKey>
     {
         private readonly object _lock = new object();
+        private Guid _version = Guid.NewGuid();
         private Node _root;
+
+        public int Count { get; private set; } = 0;
 
         public bool Find(TKey key, out TValue value)
         {
@@ -88,6 +93,8 @@ namespace Engine.Core.Collections
             lock (_lock)
             {
                 Insert(nodeToInsert);
+                ++Count;
+                _version = Guid.NewGuid();
             }
         }
 
@@ -141,7 +148,19 @@ namespace Engine.Core.Collections
                 }
 
                 Delete(node);
+                --Count;
+                _version = Guid.NewGuid();
                 return true;
+            }
+        }
+
+        public void Clear()
+        {
+            lock (_lock)
+            {
+                _root = null;
+                Count = 0;
+                _version = Guid.NewGuid();
             }
         }
 
@@ -190,6 +209,16 @@ namespace Engine.Core.Collections
             }
         }
 
+        public IEnumerator<TValue> GetEnumerator()
+        {
+            return new Enumerator(this);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
         private sealed class Node
         {
             public Node(TKey key, TValue value)
@@ -203,6 +232,85 @@ namespace Engine.Core.Collections
             public Node Left { get; set; }
             public Node Right { get; set; }
             public Node Parent { get; set; }
+        }
+
+        private struct Enumerator : IEnumerator<TValue>
+        {
+            private readonly BinaryTree<TKey, TValue> _tree;
+            private readonly Node _root;
+            private readonly Guid _version;
+            private readonly Queue<Node> _queue;
+            private Node _current;
+
+            public Enumerator(BinaryTree<TKey, TValue> tree)
+            {
+                _tree = tree;
+                _version = tree._version;
+                _root = tree._root;
+                _current = null;
+                _queue = new Queue<Node>();
+                if(_root != null)
+                {
+                    _queue.Enqueue(_root);
+                }
+            }
+
+            public TValue Current
+            {
+                get
+                {
+                    if (_version != _tree._version)
+                    {
+                        _current = null;
+                        throw new InvalidOperationException(Resources.ErrBinaryTreeChanged);
+                    }
+                    return _current != null ? _current.Value : default(TValue);
+                }
+            }
+
+            object IEnumerator.Current => _current;
+
+            public void Dispose()
+            {
+                return;
+            }
+
+            public bool MoveNext()
+            {
+                if(_version != _tree._version)
+                {
+                    _current = null;
+                    throw new InvalidOperationException(Resources.ErrBinaryTreeChanged);
+                }
+                if(_queue.Count > 0)
+                {
+                    _current = _queue.Dequeue();
+                    if(_current.Left != null)
+                    {
+                        _queue.Enqueue(_current.Left);
+                    }
+                    if(_current.Right != null)
+                    {
+                        _queue.Enqueue(_current.Right);
+                    }
+                    return true;
+                }
+                else
+                {
+                    _current = null;
+                    return false;
+                }
+            }
+
+            public void Reset()
+            {
+                _current = null;
+                _queue.Clear();
+                if(_root != null)
+                {
+                    _queue.Enqueue(_root);
+                }
+            }
         }
     }
 }
