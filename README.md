@@ -17,3 +17,5 @@
 *Int32Decomposed/Int64Decomposed* - Int32/Int64 types with access to single bytes
 
 *BinaryTree* - thread-safe binary tree
+
+*ConcurrentStack* - lock free concurrent stack
