@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package grpc.protos.events;
+
+service EventService{
+	rpc Subscribe(SubscribeRequest) returns (SubscribeResponse) {}
+	rpc ListCompletedTasks(Subscriber) returns (stream CompletedTask) {}
+	rpc CancelTask(CancelTaskRequest) returns (CancelTaskResponse) {}
+}
+
+message SubscribeRequest {
+	string subscriber_name = 1;
+}
+
+message SubscribeResponse {
+	string subscriber_id = 1;
+}
+
+message CompletedTask {
+	string task_id = 1;
+}
+
+message Subscriber {
+	string subscriber_id = 1;
+}
+
+message CancelTaskRequest {
+	string subscriber_id = 1;
+	string task_id = 2;
+}
+
+message CancelTaskResponse {
+}

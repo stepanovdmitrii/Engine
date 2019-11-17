@@ -41,5 +41,17 @@ namespace Engine.Core
             if (disposed)
                 throw new ObjectDisposedException(@this.ToString());
         }
+
+        public static void That(bool condition, string errorMessage, params string[] args)
+        {
+            if (!condition)
+                throw new Exception(string.Format(errorMessage, args));
+        }
+
+        public static void That(bool condition, string errorMessage)
+        {
+            if (!condition)
+                throw new Exception(errorMessage);
+        }
     }
 }

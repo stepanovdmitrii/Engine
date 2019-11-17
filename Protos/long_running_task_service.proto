@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package grpc.protos.events;
+
+service LongRunningTaskService{
+	rpc StartTask(CreateTaskRequest) returns (CreateTaskResponse) {}
+	rpc GetTaskResult(LongTaskResultRequest) returns (LongTaskResultResponse) {}
+}
+
+message CreateTaskRequest {
+	string subscriber_id = 1;
+}
+
+message CreateTaskResponse {
+	string task_id = 1;
+}
+
+message LongTaskResultRequest{
+	string task_id = 1;
+	string subscriber_id = 2;
+}
+
+message LongTaskResultResponse {
+	int64 result = 1;
+}
