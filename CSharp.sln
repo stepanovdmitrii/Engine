@@ -24,9 +24,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Grpc.Server", "Grpc.Server\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Protos", "Protos", "{A915DD3B-7446-4358-8FD5-7905F55EC59C}"
 	ProjectSection(SolutionItems) = preProject
-		Protos\event_service.proto = Protos\event_service.proto
 		Protos\long_running_task_service.proto = Protos\long_running_task_service.proto
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Grpc.Client", "Grpc.Client\Grpc.Client.csproj", "{A289C7DD-84DA-4990-A108-45C3A70FC292}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -54,6 +55,10 @@ Global
 		{2942857F-CA79-4709-A767-A361A0F22561}.Debug|x64.Build.0 = Debug|x64
 		{2942857F-CA79-4709-A767-A361A0F22561}.Release|x64.ActiveCfg = Release|x64
 		{2942857F-CA79-4709-A767-A361A0F22561}.Release|x64.Build.0 = Release|x64
+		{A289C7DD-84DA-4990-A108-45C3A70FC292}.Debug|x64.ActiveCfg = Debug|x64
+		{A289C7DD-84DA-4990-A108-45C3A70FC292}.Debug|x64.Build.0 = Debug|x64
+		{A289C7DD-84DA-4990-A108-45C3A70FC292}.Release|x64.ActiveCfg = Release|x64
+		{A289C7DD-84DA-4990-A108-45C3A70FC292}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -64,6 +69,7 @@ Global
 		{1425FCC3-BAE0-4A8E-9A1B-364AA5A3F190} = {852DB0D1-FF94-4336-99EF-525F956A69F8}
 		{C9295543-5399-416B-BF25-220300E1F5A6} = {852DB0D1-FF94-4336-99EF-525F956A69F8}
 		{2942857F-CA79-4709-A767-A361A0F22561} = {8B2FA187-5012-49DA-AD61-99ACD54C38F7}
+		{A289C7DD-84DA-4990-A108-45C3A70FC292} = {8B2FA187-5012-49DA-AD61-99ACD54C38F7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3FF424D2-5FCD-44EA-B5B5-222014C5D4EB}

@@ -36,7 +36,7 @@ namespace Grpc.Server
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapGrpcService<EventService>();
+                endpoints.MapGrpcService<LongRunningTaskService>();
 
                 endpoints.MapGet("/", async context =>
                 {

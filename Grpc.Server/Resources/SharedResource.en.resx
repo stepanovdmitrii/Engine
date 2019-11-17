@@ -117,25 +117,7 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ErrSubscriberIdMustBeSpecified" xml:space="preserve">
-    <value>The subscriber id must be specified.</value>
-  </data>
-  <data name="ErrSubscriberNameMustBeSpecified" xml:space="preserve">
-    <value>The subscriber name must be specified.</value>
-  </data>
-  <data name="ErrSubscriberNotFound" xml:space="preserve">
-    <value>The subscriber is not found.</value>
-  </data>
-  <data name="ErrTaskIdMustBeSpecified" xml:space="preserve">
-    <value>The task id must be specified.</value>
-  </data>
-  <data name="ErrTaskNotFound" xml:space="preserve">
-    <value>The task is not found.</value>
-  </data>
-  <data name="MsgCreatingSubscriber0" xml:space="preserve">
-    <value>Creating a subscriber {0}, host {1}...</value>
-  </data>
-  <data name="MsgSubscriberCreated0" xml:space="preserve">
-    <value>The subscriber {0} created (subscriber id = {1})</value>
+  <data name="MsgEnumerating" xml:space="preserve">
+    <value>Enumerating...</value>
   </data>
 </root>
