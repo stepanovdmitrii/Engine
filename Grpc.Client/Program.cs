@@ -22,9 +22,9 @@ namespace Grpc.Client
                 {
                     while(await asyncCall.ResponseStream.MoveNext(cancellationTokenSource.Token))
                     {
+                        var size = asyncCall.ResponseStream.Current.CalculateSize();
                         var result = asyncCall.ResponseStream.Current.Result;
-                        Console.WriteLine(result);
-                        if (result == 2) cancellationTokenSource.Cancel();
+                        Console.WriteLine($"size {size}, result {result}");
                     }
                 }
             }
