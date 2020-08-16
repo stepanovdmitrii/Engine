@@ -1,122 +1,194 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Engine.Core.Concurrent
 {
-    public sealed class ReadWriteKeyMonitor<TKey>
+    public interface IReadWriteKeyMonitor<TKey>
     {
-        private readonly LockSet _locks;
+        IDisposable AcquireReadLock(TKey key);
+        IDisposable AcquireWriteLock(TKey key);
+    }
+
+    public sealed class ReadWriteKeyMonitor<TKey>: IReadWriteKeyMonitor<TKey>, IDisposable
+    {
+        private readonly object _global;
+        private readonly Dictionary<TKey, LockContext> _locks;
 
         public ReadWriteKeyMonitor(IEqualityComparer<TKey> equalityComparer)
         {
-            _locks = new LockSet(equalityComparer);
+            _global = new object();
+            _locks = new Dictionary<TKey, LockContext>(equalityComparer);
         }
 
         public ReadWriteKeyMonitor(): this(EqualityComparer<TKey>.Default) { }
 
-        public IDisposable LockForRead(TKey key)
+        public IDisposable AcquireReadLock(TKey key)
         {
-            return GetLock(key, false);
+            return GetLock(key, LockType.Read);
         }
 
-        public IDisposable LockForWrite(TKey key)
+        public IDisposable AcquireWriteLock(TKey key)
         {
-            return GetLock(key, true);
+            return GetLock(key, LockType.Write);
         }
 
-        private IDisposable GetLock(TKey key, bool exclusive)
+        private IDisposable GetLock(TKey key, LockType type)
         {
-            LockContext context = _locks.Acquire(key);
-            if (exclusive)
+            ILockContext context = GetOrAdd(key);
+
+            try
             {
-                context.EnterWriteLock();
+                context.EnterLock(type);
             }
-            else
+            catch
             {
-                context.EnterReadLock();
+                ReleaseFailed(key);
+                throw;
             }
-            return new DisposableAction(() => _locks.ReleaseAndUnlock(key, exclusive));           
+            return new DisposableAction(() => Release(key, type));
         }
 
-        private sealed class LockContext
+        private void Release(TKey key, LockType type)
         {
-            private readonly ReadWriteLock _lock = new ReadWriteLock();
-            private uint _usages = 0;
+            lock (_global)
+            {
+                Verify.Assert(_locks.TryGetValue(key, out LockContext context));
+                if (context.DecrementUsages() == 0)
+                {
+                    using (context)
+                    {
+                        _locks.Remove(key);
+                        context.ExitLock(type);
+                    }
+                }
+                else
+                {
+                    context.ExitLock(type);
+                }
+            }
+        }
+
+        private void ReleaseFailed(TKey key)
+        {
+            lock (_global)
+            {
+                Verify.Assert(_locks.TryGetValue(key, out LockContext context));
+                if (context.DecrementUsages() == 0)
+                {
+                    using (context)
+                    {
+                        _locks.Remove(key);
+                    }
+                }
+            }
+        }
+
+        private ILockContext GetOrAdd(TKey key)
+        {
+            lock (_global)
+            {
+                if (false == _locks.TryGetValue(key, out LockContext context))
+                {
+                    LockContext add = null;
+                    try
+                    {
+                        add = new LockContext();
+                        _locks[key] = add;
+                        context = add;
+                        add = null;
+                    }
+                    finally
+                    {
+                        if (add != null) add.Dispose();
+                    }
+                }
+                context.IncrementUsages();
+                return context;
+            }
+        }
+
+        public void Dispose()
+        {
+            foreach(var pair in _locks)
+            {
+                pair.Value.Dispose();
+            }
+            _locks.Clear();
+        }
+
+        private enum LockType
+        {
+            Read = 0,
+            Write = 1,
+            //Upgradeable = 2
+        }
+
+        private interface ILockContext
+        {
+            void IncrementUsages();
+            void EnterLock(LockType type);
+        }
+
+        private sealed class LockContext: ILockContext, IDisposable
+        {
+            private readonly ReaderWriterLockSlim _lock;
+            private uint _usages;
+
+            public LockContext()
+            {
+                _lock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+                _usages = 0;
+            }
 
             public void IncrementUsages()
             {
+                Verify.Assert(_usages < uint.MaxValue);
                 _usages++;
             }
 
             public uint DecrementUsages()
             {
+                Verify.Assert(_usages > uint.MinValue);
                 _usages--;
                 return _usages;
             }
 
-            public void EnterReadLock()
+            public void EnterLock(LockType type)
             {
-                _lock.EnterReadLock();
-            }
-
-            public void ExitReadLock()
-            {
-                _lock.ExitReadLock();
-            }
-
-            public void EnterWriteLock()
-            {
-                _lock.EnterWriteLock();
-            }
-
-            public void ExitWriteLock()
-            {
-                _lock.ExitWriteLock();
-            }
-        }
-
-        private sealed class LockSet
-        {
-            private readonly object _lock = new object();
-            private readonly Dictionary<TKey, LockContext> _locks;
-
-            public LockSet(IEqualityComparer<TKey> equalityComparer)
-            {
-                _locks = new Dictionary<TKey, LockContext>(equalityComparer);
-            }
-
-            public LockContext Acquire(TKey key)
-            {
-                lock (_lock)
+                switch (type)
                 {
-                    if (!_locks.TryGetValue(key, out LockContext context))
-                    {
-                        context = new LockContext();
-                        _locks[key] = context;
-                    }
-                    context.IncrementUsages();
-                    return context;
+                    case LockType.Read:
+                        _lock.EnterReadLock();
+                        break;
+                    case LockType.Write:
+                        _lock.EnterWriteLock();
+                        break;
+                    default:
+                        Verify.Assert(false);
+                        return;
                 }
             }
 
-            public void ReleaseAndUnlock(TKey key, bool exclusive)
+            public void ExitLock(LockType type)
             {
-                lock (_lock)
+                switch (type)
                 {
-                    LockContext context = _locks[key];
-                    if (exclusive)
-                    {
-                        context.ExitWriteLock();
-                    }
-                    else
-                    {
-                        context.ExitReadLock();
-                    }
-                    if (context.DecrementUsages() == 0)
-                    {
-                        _locks.Remove(key);
-                    }
+                    case LockType.Read:
+                        _lock.ExitReadLock();
+                        break;
+                    case LockType.Write:
+                        _lock.ExitWriteLock();
+                        break;
+                    default:
+                        Verify.Assert(false);
+                        return;
                 }
+            }
+
+            public void Dispose()
+            {
+                if (_lock != null) _lock.Dispose();
             }
         }
     }
