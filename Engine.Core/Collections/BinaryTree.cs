@@ -237,21 +237,22 @@ namespace Engine.Core.Collections
         private struct Enumerator : IEnumerator<TValue>
         {
             private readonly BinaryTree<TKey, TValue> _tree;
-            private readonly Node _root;
-            private readonly Guid _version;
             private readonly Queue<Node> _queue;
+
+            private Guid _version;
             private Node _current;
 
             public Enumerator(BinaryTree<TKey, TValue> tree)
             {
                 _tree = tree;
-                _version = tree._version;
-                _root = tree._root;
-                _current = null;
                 _queue = new Queue<Node>();
-                if(_root != null)
+
+                _version = tree._version;
+                _current = null;
+                
+                if(_tree._root != null)
                 {
-                    _queue.Enqueue(_root);
+                    _queue.Enqueue(_tree._root);
                 }
             }
 
@@ -259,16 +260,15 @@ namespace Engine.Core.Collections
             {
                 get
                 {
-                    if (_version != _tree._version)
+                    lock (_tree._lock)
                     {
-                        _current = null;
-                        throw new InvalidOperationException(Resources.ErrBinaryTreeChanged);
+                        VerifyVersion();
+                        return _current != null ? _current.Value : default(TValue);
                     }
-                    return _current != null ? _current.Value : default(TValue);
                 }
             }
 
-            object IEnumerator.Current => _current;
+            object IEnumerator.Current => Current;
 
             public void Dispose()
             {
@@ -277,38 +277,50 @@ namespace Engine.Core.Collections
 
             public bool MoveNext()
             {
-                if(_version != _tree._version)
+                lock (_tree._lock)
                 {
-                    _current = null;
-                    throw new InvalidOperationException(Resources.ErrBinaryTreeChanged);
-                }
-                if(_queue.Count > 0)
-                {
-                    _current = _queue.Dequeue();
-                    if(_current.Left != null)
+                    VerifyVersion();
+                    if (_queue.Count > 0)
                     {
-                        _queue.Enqueue(_current.Left);
+                        _current = _queue.Dequeue();
+                        if (_current.Left != null)
+                        {
+                            _queue.Enqueue(_current.Left);
+                        }
+                        if (_current.Right != null)
+                        {
+                            _queue.Enqueue(_current.Right);
+                        }
+                        return true;
                     }
-                    if(_current.Right != null)
+                    else
                     {
-                        _queue.Enqueue(_current.Right);
+                        _current = null;
+                        return false;
                     }
-                    return true;
-                }
-                else
-                {
-                    _current = null;
-                    return false;
                 }
             }
 
             public void Reset()
             {
-                _current = null;
-                _queue.Clear();
-                if(_root != null)
+                lock (_tree._lock)
                 {
-                    _queue.Enqueue(_root);
+                    _current = null;
+                    _version = _tree._version;
+                    _queue.Clear();
+                    if (_tree._root != null)
+                    {
+                        _queue.Enqueue(_tree._root);
+                    }
+                }
+            }
+
+            private void VerifyVersion()
+            {
+                if (_version != _tree._version)
+                {
+                    _current = null;
+                    throw new InvalidOperationException(Resources.ErrBinaryTreeChanged);
                 }
             }
         }
